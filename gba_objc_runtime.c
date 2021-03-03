@@ -54,6 +54,7 @@ void* objc_load_method(struct objc_class_gsv1* class, SEL selector)
     for (int i = 0; i < methods->count; ++i) {
         struct objc_method_gcc* method = &methods->methods[i];
 
+        // FIXME: this comparison doesn't work correctly yet!
         if (((struct objc_selector*)method->selector)->index ==
             ((struct objc_selector*)selector)->index) {
             return method->imp;
@@ -69,6 +70,8 @@ id objc_msg_lookup(id receiver, SEL selector)
 {
     Class c = receiver->class_pointer;
 
+    // This is super lazy. We should be correctly doing message dispatch by
+    // walking up the class hierarchy.
     return objc_load_method((struct objc_class_gsv1*)((struct objc_class_gsv1*)c)->isa, selector);
 }
 
