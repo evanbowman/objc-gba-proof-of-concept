@@ -25,6 +25,7 @@
 
 -(id) test1 {
     field_ = 42;
+
     return self;
 }
 
@@ -39,4 +40,10 @@
 int main()
 {
     id hw = [[[HelloWorld alloc] test1] test];
+
+    [HelloWorld hello: "test"];
+
+    [hw free];
+
+    return 0;
 }
