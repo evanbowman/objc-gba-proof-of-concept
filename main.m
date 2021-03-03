@@ -8,7 +8,7 @@
 +(id) hello: (const char*) param;
 +(id) world: (const char*) param;
 -(id) test1;
--(void) test;
+-(id) test;
 @end
 
 
@@ -28,16 +28,15 @@
     return self;
 }
 
--(void) test {
+-(id) test {
     printf("%d\n", field_);
     puts("test");
+    return self;
 }
 @end
 
 
 int main()
 {
-    // [[HelloWorld hello: "some text"] world: "some more text!"];
-
-    [[[HelloWorld alloc] test1] test];
+    id hw = [[[HelloWorld alloc] test1] test];
 }
