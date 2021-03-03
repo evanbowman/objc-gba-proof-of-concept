@@ -16,6 +16,12 @@ id __objc_free_instance(id instance);
 }
 
 
++ (id)new
+{
+    return [[self alloc] init];
+}
+
+
 - (id)free
 {
     return __objc_free_instance(self);
@@ -24,7 +30,6 @@ id __objc_free_instance(id instance);
 
 - (id)init
 {
-    puts("here");
     return self;
 }
 

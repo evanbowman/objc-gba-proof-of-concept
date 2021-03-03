@@ -5,6 +5,7 @@
 }
 
 + (id)alloc;
++ (id)new;
 - (id)free;
 - (id)init;
 

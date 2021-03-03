@@ -39,9 +39,7 @@
 
 int main()
 {
-    id hw = [[[HelloWorld alloc] test1] test];
-
-    [HelloWorld hello: "test"];
+    id hw = [[[HelloWorld new] test1] test];
 
     [hw free];
 
