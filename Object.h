@@ -6,5 +6,6 @@
 
 + (id)alloc;
 - (id)free;
+- (id)init;
 
 @end

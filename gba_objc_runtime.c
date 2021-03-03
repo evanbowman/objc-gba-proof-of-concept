@@ -3,7 +3,7 @@
 #include "selector.h"
 #include "method.h"
 #include <string.h>
-
+#include <stdlib.h>
 #include <stdio.h>
 
 
@@ -33,91 +33,66 @@ id objc_get_class(const char* name)
 }
 
 
-id __objc_allocate_instance(struct objc_class_gsv1* class)
+id __objc_allocate_instance(id class)
 {
-    return nil;
+    // FIXME: actually calculate the instance size from the class.
+    id mem = malloc(100);
+    mem->class_pointer = (Class)class;
+    return mem;
 }
 
 
 id __objc_free_instance(id self)
 {
+    free(self);
     return nil;
 }
 
 
-static int sel_is_equal(SEL sel_1, SEL sel_2)
+static int type_compare(const char* lhs, const char* rhs)
 {
-    if (sel_1 == 0 || sel_2 == 0) {
-        return sel_1 == sel_2;
-    }
-
-    if (sel_1->name == sel_2->name) {
-        return 1;
-    }
-
-    // FIXME...
-    return 1;
+    return lhs == rhs || strcmp(lhs, rhs) == 0;
 }
 
 
-void* objc_load_method(struct objc_class_gsv1* class, SEL selector)
+static void* objc_load_method_slow(struct objc_class_gsv1* class, SEL selector)
 {
-    struct objc_method_list_gcc* methods = class->methods;
+    while (1) {
+        struct objc_class_gsv1* meta = (struct objc_class_gsv1*)class->isa;
 
-    if (methods == NULL) {
-        while (1) ;
-    }
+        if (meta->methods) {
+            struct objc_method_list_gcc* methods = meta->methods;
 
-    for (int i = 0; i < methods->count; ++i) {
-        struct objc_method_gcc* method = &methods->methods[i];
+            for (int i = 0; i < methods->count; ++i) {
+                struct objc_method_gcc* method = &methods->methods[i];
 
-        // printf("%s %s\n", selector->types, method->selector->types);
-
-        // FIXME: this comparison doesn't work correctly yet!
-        if (sel_is_equal(method->selector, selector)) {
-            return method->imp;
+                if (type_compare(method->types, selector->types) &&
+                    strcmp(selector->name, ((char*)&method->selector->index)) == 0) {
+                    return method->imp;
+                }
+            }
         }
-        // FIXME
-        return method->imp;
-    }
-    while (1) ;
-}
 
-
-void debug_walk_class(struct objc_class_gsv1* class, int depth)
-{
-    printf("name: %s, info: %zu, inst_size: %zu, abi: %zu\n",
-           class->name,
-           class->info,
-           class->instance_size,
-           class->abi_version);
-
-    if (class->methods) {
-        struct objc_method_list_gcc* methods = class->methods;
-
-        for (int i = 0; i < methods->count; ++i) {
-            struct objc_method_gcc* method = &methods->methods[i];
-            printf("method: %s %zu\n",
-                   method->types ? method->types : "no types",
-                   method->selector->index);
+        puts("checking super class");
+        if (class->super_class) {
+            // NOTE: the ABI stores a string classname in the super_class field.
+            id super = (id)objc_get_class((const char*)class->super_class);
+            class = (struct objc_class_gsv1*)super->class_pointer;
+        } else {
+            puts("has no superclass?!");
+            return nil;
         }
-    }
-
-    if (class->isa && depth < 2) {
-        debug_walk_class((struct objc_class_gsv1*)class->isa, depth + 1);
     }
 }
 
 
 id objc_msg_lookup(id receiver, SEL selector)
 {
-    Class c = receiver->class_pointer;
+    printf("msg lookup starting at %p\n", receiver);
+    Class class = receiver->class_pointer;
+    printf("class is %p\n", class);
 
-    debug_walk_class((struct objc_class_gsv1*)receiver, 0);
-
-    // This is super lazy. We should be correctly doing message dispatch by
-    // walking up the class hierarchy.
-    return objc_load_method((struct objc_class_gsv1*)((struct objc_class_gsv1*)c)->isa, selector);
+    return objc_load_method_slow((struct objc_class_gsv1*)class, selector);
 }
 
 
